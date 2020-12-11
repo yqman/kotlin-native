@@ -17,7 +17,6 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.irDelegatingConstructorCall
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
-import org.jetbrains.kotlin.ir.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
@@ -106,11 +105,11 @@ internal class InitializersLowering(val context: CommonBackendContext) : ClassLo
 
             val startOffset = irClass.startOffset
             val endOffset = irClass.endOffset
-            val initializeFun = WrappedSimpleFunctionDescriptor().let {
+            val initializeFun =
                 IrFunctionImpl(
                         startOffset, endOffset,
                         DECLARATION_ORIGIN_ANONYMOUS_INITIALIZER,
-                        IrSimpleFunctionSymbolImpl(it),
+                        IrSimpleFunctionSymbolImpl(),
                         "INITIALIZER".synthesizedName,
                         DescriptorVisibilities.PRIVATE,
                         Modality.FINAL,
@@ -124,7 +123,6 @@ internal class InitializersLowering(val context: CommonBackendContext) : ClassLo
                         isOperator = false,
                         isInfix = false
                 ).apply {
-                    it.bind(this)
                     parent = irClass
                     irClass.declarations.add(this)
 
@@ -132,7 +130,6 @@ internal class InitializersLowering(val context: CommonBackendContext) : ClassLo
 
                     body = IrBlockBodyImpl(startOffset, endOffset, initializers)
                 }
-            }
 
             for (initializer in initializers) {
                 initializer.transformChildrenVoid(object : IrElementTransformerVoid() {
