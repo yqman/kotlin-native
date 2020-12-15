@@ -5,7 +5,9 @@
 
 #include "Memory.h"
 
+#include "Exceptions.h"
 #include "ExtraObjectData.hpp"
+#include "Freezing.hpp"
 #include "GlobalsRegistry.hpp"
 #include "KAssert.h"
 #include "Porting.h"
@@ -89,6 +91,16 @@ MetaObjHeader* ObjHeader::createMetaObject(ObjHeader* object) {
 // static
 void ObjHeader::destroyMetaObject(ObjHeader* object) {
     mm::ExtraObjectData::Uninstall(object);
+}
+
+ALWAYS_INLINE bool isFrozen(const ObjHeader* obj) {
+    if (!obj->has_meta_object()) return false;
+
+    return mm::ExtraObjectData::FromMetaObjHeader(obj->GetMetaObjHeader()).IsFrozen();
+}
+
+ALWAYS_INLINE bool isPermanentOrFrozen(const ObjHeader* obj) {
+    return obj->permanent() || isFrozen(obj);
 }
 
 ALWAYS_INLINE bool isShareable(const ObjHeader* obj) {
@@ -190,6 +202,25 @@ extern "C" RUNTIME_NOTHROW OBJ_GETTER(AdoptStablePointer, void* pointer) {
     UpdateReturnRef(OBJ_RESULT, object);
     mm::StableRefRegistry::Instance().UnregisterStableRef(threadData, node);
     return object;
+}
+
+extern "C" void MutationCheck(ObjHeader* obj) {
+    if (obj->local()) return;
+    if (!isFrozen(obj)) return;
+
+    ThrowInvalidMutabilityException(obj);
+}
+
+extern "C" void FreezeSubgraph(ObjHeader* obj) {
+    if (auto* blocker = mm::FreezeSubgraph(obj)) {
+        ThrowFreezingException(obj, blocker);
+    }
+}
+
+extern "C" void EnsureNeverFrozen(ObjHeader* obj) {
+    if (!mm::EnsureNeverFrozen(obj)) {
+        ThrowFreezingException(obj, obj);
+    }
 }
 
 extern "C" RUNTIME_NOTHROW void CheckLifetimesConstraint(ObjHeader* obj, ObjHeader* pointee) {

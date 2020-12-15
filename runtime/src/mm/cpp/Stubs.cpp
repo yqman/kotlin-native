@@ -7,14 +7,6 @@
 
 #include "KAssert.h"
 
-ALWAYS_INLINE bool isFrozen(const ObjHeader* obj) {
-    TODO();
-}
-
-ALWAYS_INLINE bool isPermanentOrFrozen(const ObjHeader* obj) {
-    TODO();
-}
-
 extern "C" {
 
 RUNTIME_NOTHROW OBJ_GETTER(AllocInstance, const TypeInfo* type_info) {
@@ -83,18 +75,6 @@ RUNTIME_NOTHROW void EnterFrame(ObjHeader** start, int parameters, int count) {
 }
 
 RUNTIME_NOTHROW void LeaveFrame(ObjHeader** start, int parameters, int count) {
-    TODO();
-}
-
-void MutationCheck(ObjHeader* obj) {
-    TODO();
-}
-
-void FreezeSubgraph(ObjHeader* obj) {
-    TODO();
-}
-
-void EnsureNeverFrozen(ObjHeader* obj) {
     TODO();
 }
 

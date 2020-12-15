@@ -22,6 +22,8 @@ public:
     MetaObjHeader* AsMetaObjHeader() noexcept { return reinterpret_cast<MetaObjHeader*>(this); }
     static ExtraObjectData& FromMetaObjHeader(MetaObjHeader* header) noexcept { return *reinterpret_cast<ExtraObjectData*>(header); }
 
+    static ExtraObjectData& ForObjHeader(ObjHeader* object) noexcept;
+
     static ExtraObjectData& Install(ObjHeader* object) noexcept;
     static void Uninstall(ObjHeader* object) noexcept;
 
@@ -31,12 +33,26 @@ public:
 
     ObjHeader** GetWeakCounterLocation() noexcept { return &weakReferenceCounter_; }
 
+    bool IsFrozen() const noexcept;
+    // Returns `false` if failed to freeze the object (if it was set to be never frozen).
+    bool Freeze() noexcept;
+    void Unfreeze() noexcept;
+    // Returns `false` if the object is already frozen.
+    bool EnsureNeverFrozen() noexcept;
+
 private:
+    enum Flags : uint32_t {
+        kFrozen = 1 << 0,
+        kNeverFrozen = 1 << 1,
+    };
+
     explicit ExtraObjectData(const TypeInfo* typeInfo) noexcept : typeInfo_(typeInfo) {}
     ~ExtraObjectData();
 
     // Must be first to match `TypeInfo` layout.
     const TypeInfo* typeInfo_;
+
+    std::atomic<uint32_t> flags_{0};
 
 #ifdef KONAN_OBJC_INTEROP
     void* associatedObject_ = nullptr;
@@ -46,7 +62,7 @@ private:
     ObjHeader* weakReferenceCounter_ = nullptr;
 };
 
-}
-}
+} // namespace mm
+} // namespace kotlin
 
 #endif // RUNTIME_MM_EXTRA_OBJECT_DATA_H
