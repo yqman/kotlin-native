@@ -8,10 +8,10 @@ package org.jetbrains.kotlin.backend.konan.objcexport
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithSource
-import org.jetbrains.kotlin.kdoc.psi.impl.KDocTag
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtPrimaryConstructor
 import org.jetbrains.kotlin.resolve.source.getPsi
+import org.jetbrains.kotlin.backend.common.serialization.extractSerializedKdocString
 
 object StubRenderer {
     fun render(stub: Stub<*>): List<String> = collect {
@@ -24,7 +24,7 @@ object StubRenderer {
                 }
                 +"*/"
             }
-            this.descriptor?.findKDoc()?.let { +it.render() }
+            this.descriptor?.extractKDocString()?.let { +it }
 
             when (this) {
                 is ObjCProtocol -> {
@@ -210,9 +210,7 @@ internal fun formatGenerics(buffer: Appendable, generics:List<String>) {
     }
 }
 
-private fun KDocTag.render(): String = parent.text
-
-private fun DeclarationDescriptor.findKDoc(): KDocTag? {
+private fun DeclarationDescriptor.extractKDocString(): String? {
     if (this is DeclarationDescriptorWithSource) {
         val psi = source.getPsi()
         if (psi is KtDeclaration) {
@@ -220,9 +218,11 @@ private fun DeclarationDescriptor.findKDoc(): KDocTag? {
                 return null  // to be rendered with class itself
             val kdoc = psi.docComment
             if (kdoc != null) {
-                return kdoc.getDefaultSection()
+                return kdoc.getDefaultSection().parent.text
             }
         }
     }
-    return null
+    // Or ir may be some kind of DeserializedDescriptor
+    return extractSerializedKdocString()
 }
+
