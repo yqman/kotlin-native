@@ -345,7 +345,8 @@ private class BackendChecker(val context: Context, val irFile: IrFile) : IrEleme
         else ", but captures at:\n    ${captures.joinToString("\n    ") {
             val location = it.getCompilerMessageLocation(irFile)!!
             val relativePath = File(location.path).descendantRelativeTo(cwd).path
-            "$relativePath:${location.line}:${location.column}"
+            val capturedValueName = if (it is IrGetValue) ": ${it.symbol.owner.name.asString()}" else "" 
+            "$relativePath:${location.line}:${location.column}$capturedValueName"
         }}"
 
         reportError(expression,
